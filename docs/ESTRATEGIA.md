@@ -16,15 +16,17 @@ Son 10 escenarios: 5 positivos y 5 negativos. Se validan códigos HTTP, estructu
 
 ## Datos de prueba
 
-Cada escenario prepara sus propios usuarios. `DataGenerator.java` usa UUID para crear emails y contraseñas. Los casos de email duplicado crean expresamente los registros necesarios. Para probar un ID inexistente se crea y elimina un usuario propio antes de consultar o intentar eliminar ese ID.
+Cada escenario prepara sus propios usuarios cuando los necesita. `DataGenerator.java` usa UUID para crear emails y contraseñas. Los casos de email duplicado crean expresamente los registros necesarios.
 
-Cada escenario guarda sus IDs en `idsLimpieza`. El hook `afterScenario` llama al helper de eliminación al terminar, incluso si falla una aserción. La limpieza acepta que el usuario ya haya sido eliminado por el caso. No se actualizan ni eliminan usuarios tomados al azar del listado público. Una interrupción del proceso o caída de red puede impedir la limpieza y debe revisarse en los reportes.
+Los usuarios se conservan después de ejecutar las pruebas: no existe limpieza automática. Solo los escenarios de eliminación envían DELETE sobre sus propios registros. El caso de eliminar un ID inexistente crea y elimina primero su usuario, dentro de ese mismo escenario. El caso de búsqueda de ID inexistente genera uno de formato válido y comprueba su ausencia en el listado, sin borrar datos.
+
+Los registros de ejecuciones anteriores permanecen disponibles para revisión manual. Ningún escenario toma usuarios ajenos del listado para modificarlos o eliminarlos.
 
 ## Organización y patrones utilizados
 
 - **Separación de responsabilidades:** un feature por operación CRUD, un runner y helpers independientes.
-- **Reutilización mediante helpers:** la creación y limpieza se centralizan; los escenarios mantienen visibles las acciones que verifican.
-- **Configuración por escenario:** `karate-config.js` define la URL, los IDs propios y la limpieza. No se comparten usuarios entre casos.
+- **Reutilización mediante helpers:** se reutilizan la generación de datos y la creación de usuarios. Los DELETE están directamente en los escenarios de eliminación.
+- **Configuración por escenario:** `karate-config.js` define la URL base. No se comparten usuarios entre casos.
 - **Tags:** permiten ejecutar casos positivos, negativos o una operación concreta.
 - **Esquemas JSON:** los marcadores `#string`, `#number` y `#array` validan tipos; las comparaciones de mensajes y datos verifican el comportamiento.
 

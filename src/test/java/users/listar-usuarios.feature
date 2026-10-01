@@ -6,7 +6,6 @@ Feature: Listar usuarios
   @happyPath @listarUsuarios
   Scenario: Obtener la lista de usuarios correctamente
     * def creado = call read('classpath:helpers/crear-usuario.feature')
-    * eval idsLimpieza.push(creado.idUsuario)
 
     Given path 'usuarios'
     When method GET

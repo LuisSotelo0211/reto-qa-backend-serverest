@@ -6,7 +6,6 @@ Feature: Buscar usuario por ID
   @happyPath @buscarUsuario
   Scenario: Buscar un usuario existente por su ID
     * def creado = call read('classpath:helpers/crear-usuario.feature')
-    * eval idsLimpieza.push(creado.idUsuario)
 
     Given path 'usuarios', creado.idUsuario
     When method GET
@@ -17,12 +16,14 @@ Feature: Buscar usuario por ID
 
   @unHappyPath @usuarioIdInexistente
   Scenario: Buscar un usuario con ID inexistente
-    * def creado = call read('classpath:helpers/crear-usuario.feature')
-    * eval idsLimpieza.push(creado.idUsuario)
-    # El ID pertenece a esta prueba y deja de existir tras eliminarlo.
-    * call read('classpath:helpers/eliminar-usuario.feature') { idUsuario: '#(creado.idUsuario)' }
+    # Generar un ID de formato válido sin crear ni eliminar usuarios.
+    * def idInexistente = Java.type('java.util.UUID').randomUUID().toString().replace(/-/g, '').substring(0, 16)
+    Given path 'usuarios'
+    When method GET
+    Then status 200
+    And match response.usuarios[*]._id !contains idInexistente
 
-    Given path 'usuarios', creado.idUsuario
+    Given path 'usuarios', idInexistente
     When method GET
     Then status 400
     And match response == { message: 'Usuário não encontrado' }

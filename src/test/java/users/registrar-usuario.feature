@@ -13,7 +13,7 @@ Feature: Registrar usuarios
     When method POST
     Then status 201
     * def idUsuario = response._id
-    * eval idsLimpieza.push(idUsuario)
+    * print 'Usuario creado (se conserva):', idUsuario, nuevoUsuario.email
     And match response == { message: 'Cadastro realizado com sucesso', _id: '#string' }
 
     Given path 'usuarios', idUsuario
@@ -25,7 +25,6 @@ Feature: Registrar usuarios
   @unHappyPath @usuarioEmailDuplicado
   Scenario: No registrar un usuario con email duplicado
     * def creado = call read('classpath:helpers/crear-usuario.feature')
-    * eval idsLimpieza.push(creado.idUsuario)
     * def usuarioDuplicado = { nome: 'Usuario Duplicado', email: '#(creado.usuario.email)', password: '#(DataGenerator.generarPassword())', administrador: 'true' }
 
     Given path 'usuarios'

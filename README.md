@@ -29,7 +29,7 @@ La URL se configura en `src/test/java/karate-config.js`. No se requiere token pa
 mvn clean test
 ```
 
-Se ejecutan **10 escenarios**: listar (1), registrar (2), buscar por ID (3), actualizar (2) y eliminar (2). Los helpers son preparación o limpieza, no casos independientes.
+Se ejecutan **10 escenarios**: listar (1), registrar (2), buscar por ID (3), actualizar (2) y eliminar (2). Los helpers generan datos y crean usuarios para la preparación, no son casos independientes.
 
 ## Ejecutar por tags
 
@@ -62,9 +62,9 @@ Un resultado correcto debe indicar 10 pruebas ejecutadas, cero fallos y cero err
 
 ```text
 src/test/java/
-  karate-config.js           URL y limpieza por escenario
+  karate-config.js           URL base de la API
   runners/UsersTest.java     Ejecuta los features de users
-  helpers/                  Generación, creación y limpieza de datos
+  helpers/                  Generación de datos y creación de usuarios
   users/                    Un feature por operación de usuarios
 docs/ESTRATEGIA.md           Informe breve de estrategia y patrones
 pom.xml                     Dependencias y configuración de Maven
@@ -72,7 +72,11 @@ pom.xml                     Dependencias y configuración de Maven
 
 ## Datos y solución de problemas
 
-Las pruebas crean usuarios propios con emails únicos `qa-reto-...@example.com` y limpian sus IDs al terminar cada escenario. No seleccionan usuarios ajenos para actualizarlos o borrarlos. Si se interrumpe el proceso o falla la red durante la limpieza, revisa los errores y los IDs de ese escenario en el reporte.
+Las pruebas crean usuarios propios con emails únicos `qa-reto-...@example.com` y los conservan al terminar. No hay limpieza automática ni hook `afterScenario`. El registro imprime el ID y email para localizarlo en `https://serverest.dev/usuarios`.
+
+Solo los escenarios de `users/eliminar-usuario.feature` envían DELETE. Cada uno crea y elimina su propio usuario; no borra automáticamente los usuarios de ejecuciones anteriores ni usuarios ajenos. Buscar un ID inexistente genera un ID de 16 caracteres y comprueba que no esté en el listado, sin eliminar registros.
+
+El runner puede tener un filtro `.tags(...)`: si está configurado, solo ejecutará los casos seleccionados. Para ejecutar todos, debe devolver `Karate.run("classpath:users")` sin ese filtro.
 
 Si no se encuentran los features, ejecuta desde la raíz con `mvn clean test`. El `pom.xml` copia los recursos `.feature` y `.js` de `src/test/java` al classpath de pruebas.
 
