@@ -1,80 +1,35 @@
 Feature: Registrar usuarios
 
   Background:
-    * url 'https://serverest.dev'
-
+    * url baseUrl
+    * def DataGenerator = Java.type('helpers.DataGenerator')
 
   @happyPath @registrarUsuario
   Scenario: Registrar un usuario correctamente
-
-    # Generar datos dinámicos
-    * def DataGenerator = Java.type('helpers.DataGenerator')
-    * def emailDinamico = DataGenerator.generarEmail()
-    * def passwordDinamico = DataGenerator.generarPassword()
-
-    * def nuevoUsuario =
-    """
-    {
-      "nome": "Prueba 23",
-      "email": "#(emailDinamico)",
-      "password": "#(passwordDinamico)",
-      "administrador": "true"
-    }
-    """
+    * def nuevoUsuario = { nome: 'Usuario QA', email: '#(DataGenerator.generarEmail())', password: '#(DataGenerator.generarPassword())', administrador: 'true' }
 
     Given path 'usuarios'
     And request nuevoUsuario
     When method POST
     Then status 201
+    * def idUsuario = response._id
+    * eval idsLimpieza.push(idUsuario)
+    And match response == { message: 'Cadastro realizado com sucesso', _id: '#string' }
 
-    # Validar esquema de respuesta
-    * def schemaRegistro =
-    """
-    {
-      "message": "#string",
-      "_id": "#string"
-    }
-    """
-
-    And match response == schemaRegistro
-    And match response.message == 'Cadastro realizado com sucesso'
-
+    Given path 'usuarios', idUsuario
+    When method GET
+    Then status 200
+    And match response contains nuevoUsuario
+    And match response._id == idUsuario
 
   @unHappyPath @usuarioEmailDuplicado
   Scenario: No registrar un usuario con email duplicado
-
-    # Obtener usuarios existentes
-    * def resultado = call read('classpath:helpers/obtener-usuario.feature')
-    * def emailExistente = resultado.usuario.email
-
-    * print 'Email existente utilizado:', emailExistente
-
-    # Generar contraseña dinámica
-    * def DataGenerator = Java.type('helpers.DataGenerator')
-    * def passwordDinamico = DataGenerator.generarPassword()
-
-    * def usuarioDuplicado =
-    """
-    {
-      "nome": "Usuario Duplicado",
-      "email": "#(emailExistente)",
-      "password": "#(passwordDinamico)",
-      "administrador": "true"
-    }
-    """
+    * def creado = call read('classpath:helpers/crear-usuario.feature')
+    * eval idsLimpieza.push(creado.idUsuario)
+    * def usuarioDuplicado = { nome: 'Usuario Duplicado', email: '#(creado.usuario.email)', password: '#(DataGenerator.generarPassword())', administrador: 'true' }
 
     Given path 'usuarios'
     And request usuarioDuplicado
     When method POST
     Then status 400
-
-    # Validar esquema de respuesta de error
-    * def schemaError =
-    """
-    {
-      "message": "#string"
-    }
-    """
-
-    And match response == schemaError
-    And match response.message == 'Este email já está sendo usado'
+    And match response == { message: 'Este email já está sendo usado' }

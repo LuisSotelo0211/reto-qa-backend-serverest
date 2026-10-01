@@ -1,97 +1,79 @@
-# Informe de Estrategia de Automatización
+# Reto QA Back - ServeRest
 
-## 1. Enfoque de Automatización
+Pruebas de la API de usuarios con **Karate DSL 1.5.2, Java y Maven**.
 
-La automatización fue diseñada para cubrir las operaciones CRUD de la API de Usuarios de ServeRest utilizando Karate DSL.
+## Requisitos
 
-El enfoque principal fue mantener una suite de pruebas:
+- JDK 17 o superior (recomendado: JDK 17 o 21).
+- Maven 3.9.x en el PATH.
+- Acceso a Internet y a `https://serverest.dev`.
 
-- Legible.
-- Reutilizable.
-- Organizada por funcionalidad.
-- Con baja dependencia de datos estáticos.
-- Capaz de validar tanto escenarios positivos como negativos.
+Comprueba la instalación:
 
-Cada operación CRUD fue separada en un feature independiente con el objetivo de facilitar el mantenimiento y la identificación de los escenarios.
+```powershell
+java -version
+mvn -version
+```
 
----
+Maven debe mostrar un JDK compatible. Si no encuentra Java, configura `JAVA_HOME` apuntando a la carpeta del JDK y agrega su carpeta `bin` al PATH.
 
-## 2. Estrategia de Cobertura
+## Configuración
 
-La cobertura se dividió en dos tipos principales de escenarios.
+Abre una terminal en la carpeta que contiene `pom.xml`. Maven descargará las dependencias en la primera ejecución.
 
-### Happy Path
+La URL se configura en `src/test/java/karate-config.js`. No se requiere token para los endpoints de usuarios usados en el reto.
 
-Se validaron los flujos esperados de la API:
+## Ejecutar todas las pruebas
 
-- Listado de usuarios.
-- Registro de usuario válido.
-- Consulta de usuario existente.
-- Actualización de usuario existente.
-- Eliminación de usuario existente.
+```powershell
+mvn clean test
+```
 
-### Unhappy Path
+Se ejecutan **10 escenarios**: listar (1), registrar (2), buscar por ID (3), actualizar (2) y eliminar (2). Los helpers son preparación o limpieza, no casos independientes.
 
-Se agregaron escenarios negativos para validar el comportamiento de la API frente a condiciones no válidas, como:
+## Ejecutar por tags
 
-- Registro con email duplicado.
-- Consulta con ID inexistente.
-- Consulta con ID de longitud inválida.
-- Actualización utilizando un email ya registrado.
-- Eliminación de un usuario inexistente.
+En PowerShell, conserva las comillas del argumento:
 
-La combinación de Happy Path y Unhappy Path permite validar tanto el funcionamiento esperado como el manejo de errores de la API.
+```powershell
+mvn test "-Dkarate.options=--tags @happyPath"
+mvn test "-Dkarate.options=--tags @unHappyPath"
+mvn test "-Dkarate.options=--tags @registrarUsuario"
+mvn test "-Dkarate.options=--tags @actualizarUsuario"
+mvn test "-Dkarate.options=--tags @eliminarUsuario"
+```
 
----
+Otros tags: `@listarUsuarios`, `@buscarUsuario`, `@usuarioEmailDuplicado`, `@usuarioIdInexistente`, `@usuarioIdInvalido`, `@actualizarEmailDuplicado` y `@eliminarUsuarioInexistente`.
 
-## 3. Estrategia de Datos de Prueba
+## Reportes
 
-Uno de los objetivos fue reducir el uso de datos hardcodeados y evitar que las pruebas dependan de información fija.
+- `target/karate-reports/`: reportes HTML por feature.
+- `target/surefire-reports/`: resultados JUnit y resumen de Maven.
 
-Para ello se utilizaron dos estrategias.
+Para abrir el reporte de registro en Windows:
 
-### Generación dinámica de datos
+```powershell
+Start-Process .\target\karate-reports\users.registrar-usuario.html
+```
 
-Se implementó `DataGenerator.java` para generar datos que requieren ser únicos durante la ejecución, principalmente:
+Un resultado correcto debe indicar 10 pruebas ejecutadas, cero fallos y cero errores. `mvn clean test` elimina los reportes anteriores antes de ejecutar.
 
-- Emails.
-- Contraseñas.
+## Estructura
 
-Esto evita conflictos al ejecutar varias veces escenarios como el registro o actualización de usuarios.
+```text
+src/test/java/
+  karate-config.js           URL y limpieza por escenario
+  runners/UsersTest.java     Ejecuta los features de users
+  helpers/                  Generación, creación y limpieza de datos
+  users/                    Un feature por operación de usuarios
+docs/ESTRATEGIA.md           Informe breve de estrategia y patrones
+pom.xml                     Dependencias y configuración de Maven
+```
 
-### Obtención dinámica de usuarios existentes
+## Datos y solución de problemas
 
-Se implementó `obtener-usuario.feature` para consultar la API y obtener información de usuarios existentes durante la ejecución.
+Las pruebas crean usuarios propios con emails únicos `qa-reto-...@example.com` y limpian sus IDs al terminar cada escenario. No seleccionan usuarios ajenos para actualizarlos o borrarlos. Si se interrumpe el proceso o falla la red durante la limpieza, revisa los errores y los IDs de ese escenario en el reporte.
 
-Este helper permite reutilizar datos como:
+Si no se encuentran los features, ejecuta desde la raíz con `mvn clean test`. El `pom.xml` copia los recursos `.feature` y `.js` de `src/test/java` al classpath de pruebas.
 
-- `_id`
-- email
-- lista de usuarios
-
-De esta forma, las pruebas que necesitan trabajar con usuarios existentes no dependen exclusivamente de IDs o correos definidos manualmente.
-
----
-
-## 4. Estrategia de Validación
-
-Las pruebas fueron diseñadas para validar la respuesta en diferentes niveles.
-
-### Validación del resultado HTTP
-
-Se valida que la API responda con el código HTTP esperado para cada escenario.
-
-### Validación estructural
-
-Se utilizan esquemas JSON para comprobar que la respuesta contenga los campos y tipos de datos esperados.
-
-Por ejemplo:
-
-```gherkin
-{
-  "nome": "#string",
-  "email": "#string",
-  "password": "#string",
-  "administrador": "#string",
-  "_id": "#string"
-}
+La cobertura y las decisiones de diseño están en [docs/ESTRATEGIA.md](docs/ESTRATEGIA.md).

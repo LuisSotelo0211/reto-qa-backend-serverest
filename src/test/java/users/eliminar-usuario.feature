@@ -1,49 +1,30 @@
 Feature: Eliminar usuario
 
   Background:
-    * url 'https://serverest.dev'
-
+    * url baseUrl
 
   @happyPath @eliminarUsuario
   Scenario: Eliminar un usuario existente
+    * def creado = call read('classpath:helpers/crear-usuario.feature')
+    * eval idsLimpieza.push(creado.idUsuario)
 
-    * def resultado = call read('classpath:helpers/obtener-usuario.feature')
-    * def idUsuario = resultado.usuario._id
-
-    * print 'ID del usuario a eliminar:', idUsuario
-
-    Given path 'usuarios', idUsuario
+    Given path 'usuarios', creado.idUsuario
     When method DELETE
     Then status 200
+    And match response == { message: 'Registro excluído com sucesso' }
 
-    # Validar esquema de respuesta
-    * def schemaEliminacion =
-    """
-    {
-      "message": "#string"
-    }
-    """
-
-    And match response == schemaEliminacion
-    And match response.message == 'Registro excluído com sucesso'
-
+    Given path 'usuarios', creado.idUsuario
+    When method GET
+    Then status 400
+    And match response == { message: 'Usuário não encontrado' }
 
   @unHappyPath @eliminarUsuarioInexistente
   Scenario: Intentar eliminar un usuario inexistente
+    * def creado = call read('classpath:helpers/crear-usuario.feature')
+    * eval idsLimpieza.push(creado.idUsuario)
+    * call read('classpath:helpers/eliminar-usuario.feature') { idUsuario: '#(creado.idUsuario)' }
 
-    * def idUsuario = 'XCyAj6sxjhwvNXLx'
-
-    Given path 'usuarios', idUsuario
+    Given path 'usuarios', creado.idUsuario
     When method DELETE
     Then status 200
-
-    # Validar esquema de respuesta
-    * def schemaEliminacion =
-    """
-    {
-      "message": "#string"
-    }
-    """
-
-    And match response == schemaEliminacion
-    And match response.message == 'Nenhum registro excluído'
+    And match response == { message: 'Nenhum registro excluído' }
